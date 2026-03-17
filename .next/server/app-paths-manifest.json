@@ -1,0 +1,7 @@
+{
+  "/(auth)/(dashboard)/dashboard/page": "app/(auth)/(dashboard)/dashboard/page.js",
+  "/(auth)/(dashboard)/remita/page": "app/(auth)/(dashboard)/remita/page.js",
+  "/(auth)/(dashboard)/setting/page": "app/(auth)/(dashboard)/setting/page.js",
+  "/(auth)/(dashboard)/transactions/page": "app/(auth)/(dashboard)/transactions/page.js",
+  "/(auth)/(dashboard)/account/page": "app/(auth)/(dashboard)/account/page.js"
+}

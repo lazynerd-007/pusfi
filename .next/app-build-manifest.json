@@ -1,0 +1,62 @@
+{
+  "pages": {
+    "/global-error": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/global-error.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/layout.css",
+      "static/chunks/app/layout.js"
+    ],
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/page.css",
+      "static/chunks/app/page.js"
+    ],
+    "/(auth)/template": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(auth)/template.js"
+    ],
+    "/(auth)/(dashboard)/template": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(auth)/(dashboard)/template.css",
+      "static/chunks/app/(auth)/(dashboard)/template.js"
+    ],
+    "/(auth)/(dashboard)/dashboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(auth)/(dashboard)/dashboard/page.css",
+      "static/chunks/app/(auth)/(dashboard)/dashboard/page.js"
+    ],
+    "/(auth)/(dashboard)/setting/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(auth)/(dashboard)/setting/page.css",
+      "static/chunks/app/(auth)/(dashboard)/setting/page.js"
+    ],
+    "/(auth)/(dashboard)/account/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(auth)/(dashboard)/account/page.css",
+      "static/chunks/app/(auth)/(dashboard)/account/page.js"
+    ],
+    "/(auth)/(dashboard)/remita/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(auth)/(dashboard)/remita/page.css",
+      "static/chunks/app/(auth)/(dashboard)/remita/page.js"
+    ],
+    "/(auth)/(dashboard)/transactions/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(auth)/(dashboard)/transactions/page.css",
+      "static/chunks/app/(auth)/(dashboard)/transactions/page.js"
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+name: Deploy Pursfinance Frontend
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Next.js Application
+        run: npm run build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Digital Ocean
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+        env:
+          COMMIT_MESSAGE: "Deploy from GitHub Actions on $(date +'%Y-%m-%d %H:%M:%S')"
+          script: |
+            cd Pursfi-Dashboard
+            git pull
+            git merge --no-ff
+            git commit -m "$COMMIT_MESSAGE"
+            npm install
+            npm run build
+            pm2 restart frontend --update-env
