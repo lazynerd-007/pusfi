@@ -41,10 +41,8 @@ import {
   StepsProps,
 } from "antd";
 import { TextAreaProps } from "antd/es/input";
-import { Archivo } from "next/font/google";
-const archivo = Archivo({ subsets: ["latin"] });
 const primaryConfig = {
-  fontFamily: archivo.style.fontFamily,
+  fontFamily: "Arial, sans-serif",
   colorPrimary: "#000000",
 };
 
