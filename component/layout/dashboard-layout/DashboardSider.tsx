@@ -26,14 +26,24 @@ const DashboardSider = () => {
   
   const [dbUser, setDbUser] = useState<any>(null);
   const [dbBusiness, setDbBusiness] = useState<any>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   useLayoutEffect(() => {
     const fetchProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      let profile: any = null;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        let profile: any = null;
       if (session?.user) {
-        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        // Try to fetch by ID first
+        let { data, error } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        
+        // If not found by ID (maybe due to manual auth recreation), try by email
+        if (!data && session.user.email) {
+          const { data: emailData } = await supabase.from('profiles').select('*').eq('email', session.user.email).single();
+          data = emailData;
+        }
+        
         profile = data;
       } else {
         // Fallback: Just grab the first profile if no session is found during migration
@@ -64,6 +74,9 @@ const DashboardSider = () => {
             businessName: business.business_name || business.businessName || reduxBusiness?.businessName,
           });
         }
+      }
+      } finally {
+        setIsLoadingProfile(false);
       }
     };
     fetchProfile();
@@ -121,45 +134,48 @@ const DashboardSider = () => {
         <div className=" border border-gray-200" />
         <details className="dropdown">
           <summary className=" flex space-x-2 items-center justify-center  my-4  ">
-            {user?.profilePicture ? (
-              <div className="avatar">
-                <div className="w-12 rounded-full">
-                  <Image
-                    src={user.profilePicture}
-                    alt="User-pic"
-                    width={100}
-                    height={100}
-                    objectFit="center"
-                  />{" "}
-                </div>
+            {isLoadingProfile ? (
+              <div className="flex items-center justify-center w-full space-x-2">
+                <div className="skeleton w-12 h-12 rounded-full shrink-0"></div>
+                <div className="skeleton h-4 w-28"></div>
               </div>
             ) : (
-              <Avatar
-                style={{ backgroundColor: "#CDA4FF" }}
-                size={60}
-                className="!text-sm text-black relative"
-              >
-                {user?.firstName && user?.lastName 
-                  ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
-                  : 'AU'}{" "}
-              </Avatar>
+              <>
+                {user?.profilePicture ? (
+                  <div className="avatar">
+                    <div className="w-12 rounded-full">
+                      <Image
+                        src={user.profilePicture}
+                        alt="User-pic"
+                        width={100}
+                        height={100}
+                        objectFit="center"
+                      />{" "}
+                    </div>
+                  </div>
+                ) : (
+                  <Avatar
+                    style={{ backgroundColor: "#CDA4FF" }}
+                    size={60}
+                    className="!text-sm text-black relative"
+                  >
+                    {user?.firstName && user?.lastName 
+                      ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
+                      : 'AU'}{" "}
+                  </Avatar>
+                )}
+                <span className="text-sm">
+                  <p className="font-medium text-[16px]">
+                    {user?.firstName && user?.lastName 
+                      ? `${user.firstName} ${user.lastName}`
+                      : (user?.firstName || user?.lastName) 
+                        ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                        : 'Admin User'}
+                  </p>
+                </span>
+                <RiArrowDropDownLine className="cursor-pointer" size={25} />
+              </>
             )}
-            <span className="text-sm">
-              <p className="font-medium text-[16px]">
-                {" "}
-                {business?.businessName || 'PursFinance'}
-              </p>
-              <span>
-                <p>
-                  {user?.firstName && user?.lastName 
-                    ? `${user.firstName} ${user.lastName}`
-                    : (user?.firstName || user?.lastName) 
-                      ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                      : 'Admin User'}
-                </p>{" "}
-              </span>
-            </span>
-            <RiArrowDropDownLine className="cursor-pointer" size={25} />
           </summary>
           <ul className="-mt-4  menu dropdown-content z-[1]  w[15rem] w-[98%] mx-auto">
             <li
