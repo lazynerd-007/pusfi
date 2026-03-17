@@ -83,7 +83,7 @@ const Template = ({ children }: { children: React.ReactNode }) => {
     //   push("/signup-otp");
     //   return;
     // }
-  }, []);
+  }, [dispatch, getBusiness, getUser, push, securityDetails]);
   return (
     <>
       {(isLoading && isFetchingBusiness) || isUninitialized ? (

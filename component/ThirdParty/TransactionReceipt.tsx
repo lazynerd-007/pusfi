@@ -94,7 +94,7 @@ const TransactionReceipt = () => {
           // Only show error if Supabase also failed (handled by UI state)
         });
     }
-  }, [params.get("reference"), params.get("bill")]);
+  }, [params, fetchBillPaymentTransaction, fetchTransaction, supabase]);
 
   // Helper to safely format date
   const formatDate = (dateString: string | undefined | null) => {

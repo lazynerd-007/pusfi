@@ -38,7 +38,7 @@ const DashboardTable = () => {
       if (txData) setSupabaseTransactions(txData);
     };
     fetchSupabaseTx();
-  }, []);
+  }, [fetchTransactions, profile?.id, profile?.businessId, supabase]);
 
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -56,7 +56,7 @@ const DashboardTable = () => {
     const txSource = supabaseTransactions.length > 0 ? supabaseTransactions : (data?.data?.data || []);
     
     const tableData = txSource.map((tx: any) => [
-      new Date(tx.created_at || tx.createdAt || Date.now()).toLocaleDateString(),
+      new Date(tx.date || tx.created_at || tx.createdAt || Date.now()).toLocaleDateString(),
       tx.description || tx.accountName || 'Transaction',
       tx.type || tx.transactionType || 'Debit',
       `₦${Number(tx.amount).toLocaleString()}`,
@@ -106,7 +106,13 @@ const DashboardTable = () => {
 
                   <div className="flex flex-col">
                       <p className="font-medium text-sm">{e?.accountName || e?.description}</p>
-                      <p className="text-xs text-gray-400">{new Date(e?.created_at || e?.createdAt || Date.now()).toLocaleDateString()}</p>
+                      <p className="text-xs text-gray-400">{new Date(e?.date || e?.created_at || e?.createdAt || Date.now()).toLocaleString("en-US", {
+                        month: "short",
+                        day: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}</p>
                   </div>
                 </span>
                 <p className={`font-medium text-sm ${(e?.transactionType === "debit" || e?.type === "debit") ? 'text-red-500' : 'text-green-600'}`}>

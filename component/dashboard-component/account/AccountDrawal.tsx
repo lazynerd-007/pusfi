@@ -26,20 +26,29 @@ const AccountDrawal: React.FC<AccountDetailsProps> = ({
   const [isSupabaseLoading, setIsSupabaseLoading] = useState(false);
 
   useEffect(() => {
-    if (id) {
+    if (id && Open) {
+        setSupabaseTx(null); // Clear previous data
         // Try Supabase fetch first
         const fetchSupabaseTx = async () => {
             setIsSupabaseLoading(true);
             try {
-                const { data: txData, error } = await supabase
-                    .from('transactions')
-                    .select('*')
-                    .eq('id', id) // Assuming 'id' is the UUID primary key or reference
-                    .single();
+                // Check if id is a valid UUID before querying the 'id' column
+                const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+                
+                let txData = null;
+                
+                if (isUuid) {
+                    const { data, error } = await supabase
+                        .from('transactions')
+                        .select('*')
+                        .eq('id', id)
+                        .single();
+                    if (!error) txData = data;
+                }
                 
                 // Fallback: check if 'id' matches 'reference' column
                 if (!txData) {
-                    const { data: txDataRef } = await supabase
+                    const { data: txDataRef, error: refError } = await supabase
                         .from('transactions')
                         .select('*')
                         .eq('reference', id)
@@ -58,7 +67,7 @@ const AccountDrawal: React.FC<AccountDetailsProps> = ({
                      const { data: recentTxData } = await supabase
                         .from('recent_transactions')
                         .select('*')
-                        .eq('id', id)
+                        .eq('id', id) // Assuming recent_transactions id is either string or uuid, but we'll try
                         .single();
                      if (recentTxData) setSupabaseTx(recentTxData);
                 }
@@ -77,7 +86,7 @@ const AccountDrawal: React.FC<AccountDetailsProps> = ({
             .then((res) => {})
             .catch((err) => {});
     }
-  }, [id]);
+  }, [id, Open, supabase, getTransaction]);
 
   // Merge Data (Prioritize Supabase)
   const tx = supabaseTx || data?.data;

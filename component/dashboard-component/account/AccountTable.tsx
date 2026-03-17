@@ -12,6 +12,7 @@ import { Dropdown, Menu, MenuProps } from "antd";
 import AccountDrawal from "./AccountDrawal";
 import { useTransactionsMutation } from "@/services/transactionService";
 import { useAppSelector } from "@/store/hooks";
+import { createClient } from "@/lib/supabase/client";
 
 export interface DataType {
   name: string;
@@ -38,9 +39,15 @@ const initialState = {
 };
 
 const AccountTable = () => {
-  const [fetchTransactions, { isLoading, data }] = useTransactionsMutation();
+  const [fetchTransactions, { isLoading: isLegacyLoading, data }] = useTransactionsMutation();
   const profile = useAppSelector((store) => store?.user?.user);
-  // const [data, setData] = useState<DataType[]>();
+  
+  // Supabase State
+  const [supabaseTransactions, setSupabaseTransactions] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isSupabaseLoading, setIsSupabaseLoading] = useState(true);
+  const supabase = createClient();
+
   const [tableParams, setTableParams] = useState<TableParams>({
     pagination: {
       current: 1,
@@ -52,6 +59,38 @@ const AccountTable = () => {
   const [tableFilter, setTableFilter] = useState(initialState);
   const [open, setOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<DataType | null>(null);
+
+  useEffect(() => {
+    const fetchSupabaseData = async () => {
+      setIsSupabaseLoading(true);
+      const { current, pageSize } = tableParams.pagination || { current: 1, pageSize: 5 };
+      const from = ((current || 1) - 1) * (pageSize || 5);
+      const to = from + (pageSize || 5) - 1;
+
+      // Build Query
+      let query = supabase
+        .from('transactions')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      // Apply Filters
+      if (tableFilter.filterBy) {
+        query = query.ilike('description', `%${tableFilter.filterBy}%`);
+      }
+      
+      const { data: txData, count, error } = await query;
+      
+      if (txData) {
+        setSupabaseTransactions(txData);
+        setTotalCount(count || 0);
+      }
+      setIsSupabaseLoading(false);
+    };
+
+    fetchSupabaseData();
+  }, [tableParams.pagination, tableFilter.filterBy, supabase]);
+  
   const columns: ColumnsType<DataType> = [
     {
       title: (
@@ -60,23 +99,25 @@ const AccountTable = () => {
           <TableIcon />
         </span>
       ),
-      dataIndex: "createdAt",
+      dataIndex: "created_at",
       render: (date) =>
         `${new Date(date).toLocaleString("en-US", {
           month: "short",
           day: "2-digit",
           year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
         })}`,
       width: "20%",
     },
     {
       title: (
         <span className="flex items-center uppercase space-x-2">
-          <p>Full Name</p>
+          <p>Description</p>
           <TableIcon />
         </span>
       ),
-      dataIndex: "accountName",
+      dataIndex: "description",
       render: (name) => `${name}`,
       width: "30%",
     },
@@ -98,17 +139,20 @@ const AccountTable = () => {
           <TableIcon />
         </span>
       ),
-      dataIndex: "transactionType",
-      render: (type) =>
-        type === "debit" ? (
+      dataIndex: "type",
+      render: (type) => {
+        // Handle both 'debit'/'credit' and 'transactionType' formats
+        const txType = type || "debit";
+        return txType.toLowerCase() === "debit" ? (
           <span className="p-[4%] rounded-[80px] bg-[#FF39561A]/[10%] text-[#FF3956] text-center  text-[14px] font-[600]">
-            {type}
+            DEBIT
           </span>
         ) : (
           <span className="p-[4%] rounded-[80px] bg-[#0AA07B]/[10%] text-[#0AA07B] text-center text-[14px] font-[600]">
-            {type}
+            CREDIT
           </span>
-        ),
+        );
+      },
       width: "20%",
     },
     {
@@ -119,7 +163,7 @@ const AccountTable = () => {
         </span>
       ),
       dataIndex: "amount",
-      render: (amount) => `₦${amount}`,
+      render: (amount) => `₦${Number(amount).toLocaleString()}`,
       width: "20%",
     },
     {
@@ -129,15 +173,17 @@ const AccountTable = () => {
           <TableIcon className="ml-4" />
         </span>
       ),
-      dataIndex: "reference",
-      render: (id: any, record: DataType) => {
+      dataIndex: "id",
+      render: (_: any, record: any) => {
         return (
           <span
             onClick={() => {
-              setId(id);
+              const txId = record.id || record.reference;
+              setId(txId);
+              setSelectedAccount(record);
               setOpen(true);
             }}
-            className="cursor-pointer"
+            className="cursor-pointer font-bold text-lg"
           >
             ...
           </span>
@@ -145,133 +191,68 @@ const AccountTable = () => {
       },
     },
   ];
-  // const fetchData = () => {
-  //   setLoading(true);
-  //   fetch(`https://testapi.io/api/sikiru/purscliq-transaction`)
-  //     .then((res) => res.json())
-  //     .then((results) => {
-  //       setData(results);
-  //       setLoading(false);
-  //       setTableParams({
-  //         ...tableParams,
-  //         pagination: {
-  //           ...tableParams?.pagination,
-  //           total: 200,
-  //         },
-  //       });
-  //     });
-  // };
-
-  useEffect(() => {
-    fetchTransactions({
-      ...tableFilter,
-      page: tableParams?.pagination?.current,
-      userId: profile?.id,
-      businessId: profile?.businessId,
-    })
-      .unwrap()
-      .then((res) => {
-        setTableParams({
-          ...tableParams,
-          pagination: {
-            ...tableParams?.pagination,
-            total: res?.data.total,
-          },
-        });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, [tableParams.pagination?.current]);
-  useEffect(() => {
-    fetchTransactions({
-      ...tableFilter,
-      page: 1,
-      userId: profile?.id,
-      businessId: profile?.businessId,
-    })
-      .unwrap()
-      .then((res) => {
-        setTableParams({
-          ...tableParams,
-          pagination: {
-            ...tableParams?.pagination,
-            total: res?.data.total,
-          },
-        });
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, [JSON.stringify(filter)]);
-
   const handleTableChange = (pagination: TablePaginationConfig) => {
-    setTableParams((prev) => ({
-      ...prev,
+    setTableParams({
       pagination,
-    }));
+    });
   };
 
+  // Determine which data to show: Supabase (Priority) -> Legacy -> Empty
+  const displayData = supabaseTransactions.length > 0 ? supabaseTransactions : (data?.data?.data || []);
+  const displayTotal = totalCount > 0 ? totalCount : (data?.data?.total || 0);
+
   return (
-    <div className="bg-white flex flex-col gap-[0.5rem] p-[2%]">
-      <h4 className=" text-[19px] font-[600]">Transaction</h4>
-      <div className="flex items-center justify-start w-full gap-[1rem]">
-        <DatePicker
-          onChange={(_, date) =>
-            setTableFilter((prev) => ({
-              ...prev,
-              startDate: date as string,
-            }))
+    <>
+      <span className="flex items-center space-x-3 mb-3">
+        <Input
+          placeholder="Filter by name"
+          onChange={(e) =>
+            setTableFilter((prev) => ({ ...prev, filterBy: e.target.value }))
           }
-          className="h-fit !w-[15rem]"
-          placeholder="Start Date"
+          className="!w-[300px] !h-[2.5rem] !bg-white"
         />
-        <DatePicker
-          onChange={(_, date) =>
-            setTableFilter((prev) => ({
-              ...prev,
-              endDate: date as string,
-            }))
-          }
-          className="h-fit !w-[15rem]"
-          placeholder="End Date"
-        />
-        <div className="w-fit">
-          <Input
-            value={tableFilter?.amount}
-            onChange={(e) =>
-              setTableFilter((prev) => ({
-                ...prev,
-                amount: e.target.value,
-              }))
-            }
-            className="h-fit w-fit"
-            placeholder="Amount"
-          />
-        </div>
-        <div
-          onClick={() => {
-            setFilter((prev) => !prev);
+        {/* <DatePicker
+          className="!w-[300px] !h-[2.5rem] !bg-white"
+          placeholder="Filter by Date"
+        /> */}
+        <Dropdown
+          overlayClassName="w-[200px] rounded-sm p-2 bg-white shadow-xl"
+          menu={{
+            items: [
+              {
+                key: "1",
+                label: "All",
+                onClick: () => {
+                  setFilter(!filter);
+                  setTableFilter(initialState);
+                },
+              },
+            ],
           }}
-          className="flex justify-end w-full cursor-pointer"
+          trigger={["click"]}
         >
-          <span className="flex items-center rounded-[5px] border border-[#B8C9C9] p-[1%] justify-self-end self-end">
+          <span className="cursor-pointer border border-gray-300 rounded-md p-2 bg-white">
             <FilterIcon />
-            <p className="text-white text-[16px] font-[500]">filter</p>
           </span>
-        </div>
-      </div>
-      <div className="relative overflow-x-auto  sm:rounded-lg w-[22rem] md:w-full">
-        <Table
-          columns={columns}
-          dataSource={data?.data?.data || []}
-          pagination={tableParams.pagination}
-          loading={isLoading}
-          onChange={handleTableChange}
-        />
-      </div>
-      <AccountDrawal Open={open} onClose={() => setOpen(false)} id={id} />
-    </div>
+        </Dropdown>
+      </span>
+      <Table
+        columns={columns}
+        dataSource={displayData}
+        loading={isSupabaseLoading}
+        pagination={{
+          ...tableParams.pagination,
+          total: displayTotal,
+        }}
+        onChange={handleTableChange}
+        rowKey={(record) => record.id || record.reference}
+      />
+      <AccountDrawal
+        Open={open}
+        onClose={() => setOpen(false)}
+        id={id}
+      />
+    </>
   );
 };
 

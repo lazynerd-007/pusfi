@@ -1,6 +1,5 @@
 
--- Re-populate dashboard_stats with specific values requested
--- Truncate first to avoid duplicates or old data
+-- Reset dashboard_stats to 0 values
 TRUNCATE TABLE dashboard_stats;
 
 insert into dashboard_stats (label, value, trend, trend_label) values
@@ -9,7 +8,7 @@ insert into dashboard_stats (label, value, trend, trend_label) values
   ('Sales', 0, 0, '+0% from last month'),
   ('Active Now', 0, 0, '+0 since last hour');
 
--- Ensure dashboard_summary is also correct (reinforcing the values)
+-- Ensure dashboard_summary is set to 0
 DO $$
 BEGIN
     UPDATE dashboard_summary

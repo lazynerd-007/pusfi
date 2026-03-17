@@ -37,7 +37,7 @@ create policy "Allow public read access on business_profiles"
 
 -- Insert sample data
 insert into profiles (first_name, last_name, email, phone, profile_picture)
-select 'Ifeany', 'Nnadi', 'ifeanychisomnnadi@gmail.com', '+2348012345678', null
+select 'Ifeany', 'Nnadi', 'fupsirirzo@gufum.com', '2348138979080', null
 where not exists (select 1 from profiles);
 
 insert into business_profiles (business_name, business_email, business_phone, business_description, business_industry)

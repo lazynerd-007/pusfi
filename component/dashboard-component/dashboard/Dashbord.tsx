@@ -92,7 +92,7 @@ const Dashbord = () => {
     };
 
     fetchSupabaseData();
-  }, []);
+  }, [supabase]);
 
   const date = new Date();
 

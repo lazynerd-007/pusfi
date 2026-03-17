@@ -17,12 +17,60 @@ import { createClient } from "@/lib/supabase/client";
 
 const DashboardSider = () => {
   const pathName = usePathname();
-  const { user, business } = useAppSelector((store) => store?.user);
+  const { user: reduxUser, business: reduxBusiness } = useAppSelector((store) => store?.user);
   const dispatch = useAppDispatch();
   const [activePath, setActivePath] = useState("");
   const { replace, push } = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const supabase = createClient();
+  
+  const [dbUser, setDbUser] = useState<any>(null);
+  const [dbBusiness, setDbBusiness] = useState<any>(null);
+
+  useLayoutEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      let profile: any = null;
+      if (session?.user) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        profile = data;
+      } else {
+        // Fallback: Just grab the first profile if no session is found during migration
+        const { data } = await supabase.from('profiles').select('*').limit(1).single();
+        profile = data;
+      }
+        
+      if (profile) {
+        // Fallback to standard Redux structure if DB fields are empty
+        setDbUser({
+          ...profile,
+          firstName: profile.first_name || profile.firstName || reduxUser?.firstName,
+          lastName: profile.last_name || profile.lastName || reduxUser?.lastName,
+        });
+        
+        let business: any = null;
+        if (session?.user) {
+          const { data } = await supabase.from('business_profiles').select('*').eq('profile_id', profile.id).single();
+          business = data;
+        } else {
+           const { data } = await supabase.from('business_profiles').select('*').limit(1).single();
+           business = data;
+        }
+          
+        if (business) {
+          setDbBusiness({
+            ...business,
+            businessName: business.business_name || business.businessName || reduxBusiness?.businessName,
+          });
+        }
+      }
+    };
+    fetchProfile();
+  }, [supabase, reduxUser?.firstName, reduxUser?.lastName, reduxBusiness?.businessName]);
+
+  const user = dbUser || reduxUser;
+  const business = dbBusiness || reduxBusiness;
   
   const handleLogout = async () => {
     // 1. Sign out from Supabase
@@ -91,24 +139,23 @@ const DashboardSider = () => {
                 size={60}
                 className="!text-sm text-black relative"
               >
-                {`${user?.firstName?.charAt(0)}${user?.lastName?.charAt(0)}`}{" "}
+                {user?.firstName && user?.lastName 
+                  ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
+                  : 'AU'}{" "}
               </Avatar>
             )}
             <span className="text-sm">
               <p className="font-medium text-[16px]">
                 {" "}
-                {business?.businessName &&
-                  business?.businessName?.charAt(0).toUpperCase() +
-                    business?.businessName?.slice(1)}
+                {business?.businessName || 'PursFinance'}
               </p>
               <span>
                 <p>
-                  {user?.firstName &&
-                    user?.firstName?.charAt(0).toUpperCase() +
-                      user?.firstName?.slice(1)}{" "}
-                  {user?.lastName &&
-                    user?.lastName?.charAt(0).toUpperCase() +
-                      user?.lastName?.slice(1)}
+                  {user?.firstName && user?.lastName 
+                    ? `${user.firstName} ${user.lastName}`
+                    : (user?.firstName || user?.lastName) 
+                      ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                      : 'Admin User'}
                 </p>{" "}
               </span>
             </span>
