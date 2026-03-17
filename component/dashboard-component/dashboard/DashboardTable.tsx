@@ -56,10 +56,16 @@ const DashboardTable = () => {
     const txSource = supabaseTransactions.length > 0 ? supabaseTransactions : (data?.data?.data || []);
     
     const tableData = txSource.map((tx: any) => [
-      new Date(tx.date || tx.created_at || tx.createdAt || Date.now()).toLocaleDateString(),
+      new Date(tx.date || tx.created_at || tx.createdAt || Date.now()).toLocaleDateString("en-US", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
       tx.description || tx.accountName || 'Transaction',
       tx.type || tx.transactionType || 'Debit',
-      `₦${Number(tx.amount).toLocaleString()}`,
+      `NGN ${Number(tx.amount).toLocaleString()}`,
       tx.status || 'Success'
     ]);
 
@@ -69,6 +75,13 @@ const DashboardTable = () => {
       startY: 40,
       theme: 'grid',
       headStyles: { fillColor: [0, 0, 0] }, // Black header
+      columnStyles: {
+        0: { cellWidth: 35 }, // Date
+        1: { cellWidth: 'auto' }, // Description
+        2: { cellWidth: 15 }, // Type (reduced)
+        3: { cellWidth: 30 }, // Amount (increased)
+        4: { cellWidth: 20 }, // Status
+      }
     });
 
     doc.save("pursfi_statement.pdf");

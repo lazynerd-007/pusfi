@@ -53,10 +53,16 @@ const StatementModal = ({
 
      // Table Data
      const tableData = transactions.map((tx: any) => [
-       new Date(tx.created_at || tx.createdAt).toLocaleDateString(),
+       new Date(tx.created_at || tx.createdAt || tx.date).toLocaleString("en-US", {
+         month: "short",
+         day: "2-digit",
+         year: "numeric",
+         hour: "2-digit",
+         minute: "2-digit"
+       }),
        tx.description || tx.accountName || 'Transaction',
        tx.type || tx.transactionType || 'Debit',
-       `₦${Number(tx.amount).toLocaleString()}`,
+       `NGN ${Number(tx.amount).toLocaleString()}`,
        tx.status || 'Success'
      ]);
 
@@ -66,7 +72,13 @@ const StatementModal = ({
        startY: 65,
        theme: 'grid',
        headStyles: { fillColor: [0, 0, 0] },
-       foot: [['', '', 'Total Transactions', `${transactions.length}`, '']],
+       columnStyles: {
+        0: { cellWidth: 35 }, // Date
+        1: { cellWidth: 'auto' }, // Description
+        2: { cellWidth: 15 }, // Type (reduced)
+        3: { cellWidth: 30 }, // Amount (increased)
+        4: { cellWidth: 20 }, // Status
+      }
      });
 
      doc.save(`pursfi_statement_${dateRange.start}_${dateRange.end}.pdf`);
@@ -75,31 +87,33 @@ const StatementModal = ({
   const onFormSubmit: FormEventHandler = async (e) => {
     e.preventDefault();
     
-    if (!formData.startDate || !formData.endDate) {
-        message.error("Please select both start and end dates");
+    if (!formData.startDate) {
+        message.error("Please select a start date");
         return;
     }
+
+    const start = formData.startDate;
+    const end = formData.endDate || new Date().toISOString().split('T')[0];
 
     // Attempt Supabase Fetch first (since legacy is unreliable/mocked)
     setIsSupabaseLoading(true);
     
     try {
         // Fetch transactions from Supabase within range
-        // Note: In a real scenario, we would filter by date. 
-        // For this demo, we'll fetch recent transactions and filter in JS if needed,
-        // or just fetch all 'recent_transactions' table data.
-        
         const { data: txData, error } = await supabase
-            .from('recent_transactions')
-            .select('*');
+            .from('transactions')
+            .select('*')
+            .gte('created_at', new Date(start).toISOString())
+            .lte('created_at', new Date(end).toISOString())
+            .order('created_at', { ascending: false });
             
         if (error) throw error;
         
         if (txData && txData.length > 0) {
             // Generate PDF locally
             generatePDF(txData, { 
-                start: formData.startDate, 
-                end: formData.endDate 
+                start: start, 
+                end: end 
             });
             
             message.success("Statement generated and downloaded successfully");
@@ -107,48 +121,18 @@ const StatementModal = ({
             setOpen(false);
             setIsSupabaseLoading(false);
             return;
+        } else {
+             message.warning("No transactions found for the selected date range.");
+             setIsSupabaseLoading(false);
+             return;
         }
-        
-        // If Supabase has no data, fall back to Legacy (which might fail or return mock)
-        console.warn("No Supabase transactions found, trying legacy...");
-        throw new Error("No data in Supabase");
 
     } catch (err) {
         console.warn("Supabase Statement Gen Failed:", err);
         
-        // Fallback to Legacy
-        generateStatement({
-            ...formData,
-            businessId: profile.businessId,
-        })
-        .unwrap()
-        .then((res) => {
-            console.log(res);
-            setFormData(initialState);
-            message.success("Account statement sent to email");
-            setOpen(false);
-        })
-        .catch((legacyErr) => {
-            console.log(legacyErr);
-            // If legacy also fails (CORS), generate a dummy PDF for UX
-            message.warning("Generating local statement (Network Issue)...");
-            
-            // Mock Data for PDF
-            const mockData = [
-                { created_at: new Date().toISOString(), description: "Opening Balance", type: "credit", amount: 300000, status: "Success" },
-                { created_at: new Date().toISOString(), description: "Service Payment", type: "debit", amount: 12500, status: "Success" }
-            ];
-            
-            generatePDF(mockData, { 
-                start: formData.startDate, 
-                end: formData.endDate 
-            });
-             setFormData(initialState);
-             setOpen(false);
-        })
-        .finally(() => {
-            setIsSupabaseLoading(false);
-        });
+        // Fallback to Legacy logic removed for clarity as user wants DB fetch
+        message.error("Failed to generate statement. Please try again.");
+        setIsSupabaseLoading(false);
     }
   };
 
