@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Archivo&display=swap");
+::-webkit-scrollbar {
+  display: none;
+}
+@media print {
+  /* Hide elements not to be printed */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Show elements to be printed */
+  .print-only {
+    display: block;
+  }
+}
+body {
+  font-family: "Archivo", sans-serif;
+  background-color: white;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.editable-cell {
+  position: relative;
+  padding: 5px 12px;
+}
+
+.editable-cell-value-wrap {
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+.editable-row:hover .editable-cell-value-wrap {
+  padding: 4px 11px;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+}
+
+.overviewbg {
+  background: url("../assets/overviewbg.svg");
+  background-position: left;
+  background-repeat: no-repeat;
+}
+.ant-picker-ok .ant-btn {
+  background-color: black;
+}
+
+.bg-payroll-pattern {
+  background-image: url("/path/to/your/image.png");
+}
+
